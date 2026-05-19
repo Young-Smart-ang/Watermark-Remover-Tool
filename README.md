@@ -1,15 +1,21 @@
 # Watermark Remover Tool
 
-An AI-powered desktop application for removing watermarks from images using the **LaMa (Large Mask Inpainting)** model. Select unwanted regions with rectangle or brush tools, and the AI fills them with realistic content.
+An AI-powered desktop application for removing watermarks from images. Supports **AI inpainting (LaMa)** and **traditional OpenCV methods**, batch processing, multi-language interface, and standalone .exe packaging.
 
 ## Features
 
-- **Rectangle Selection** — Drag to select watermark areas precisely
-- **Brush Tool** — Freehand mask for irregular regions
-- **Before/After Preview** — Toggle to compare original and result
-- **Zoom & Pan** — Convenient for detailed editing
-- **Undo Support** — Revert to previous state
-- **GPU Acceleration** — Supports CUDA, DirectML, and CoreML via ONNX Runtime providers
+| Feature | Description |
+|---------|-------------|
+| 🎨 **3 Models** | LaMa AI (high quality), OpenCV Telea (fast), OpenCV NS (smooth) |
+| ✏️ **Rect & Brush** | Rectangle selection + freehand brush for any watermark shape |
+| 👁 **Before/After** | Toggle to compare original and result instantly |
+| 🔍 **Zoom & Pan** | Scroll-wheel zoom, drag to pan on large images |
+| ↩️ **Multi-step Undo** | Full undo history (up to 50 steps) |
+| 📦 **Batch Processing** | Process multiple images at once with auto water-mark detection |
+| 🌐 **中文 / English** | One-click language switch |
+| ⏳ **Progress Dialog** | Non-blocking inference with progress feedback |
+| ⌨️ **Keyboard Shortcuts** | `Ctrl+O` open, `Ctrl+S` save, `Ctrl+R` remove, `Ctrl+Z` undo |
+| 📦 **Standalone .exe** | Package with PyInstaller — no Python needed to run |
 
 ## Screenshots
 
@@ -25,11 +31,8 @@ An AI-powered desktop application for removing watermarks from images using the 
 ### Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/Young-Smart-ang/Watermark-Remover-Tool.git
 cd Watermark-Remover-Tool
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -39,32 +42,64 @@ pip install -r requirements.txt
 python watermark_remover.py
 ```
 
-Or double-click `去水印工具.bat` (Chinese) / `启动去水印.bat` on Windows.
+Or double-click `启动去水印.bat` on Windows.
 
 ## How to Use
 
-1. **Open an image** — Click "打开图片" or press `Ctrl+O`
+1. **Open an image** — Click "Open Image" or press `Ctrl+O`
 2. **Select watermark area** — Use rectangle tool (default) or brush tool
-3. **Remove** — Click "去除水印" or press `Ctrl+R` to start inpainting
-4. **Save** — Click "保存" or press `Ctrl+S` to export the result
+3. **Choose a model** — LaMa (best quality), Telea (fastest), or NS (smooth)
+4. **Remove** — Click "Remove!" or press `Ctrl+R` to start inpainting
+5. **Save** — Click "Save Result" or press `Ctrl+S` to export
 
-### Tips
-
+**Pro tips:**
+- Switch to English via the 🌐 button in the toolbar
 - For large watermarks, process in multiple small selections for better quality
-- The brush tool works best for irregular shapes
-- Use zoom (`Ctrl+滚轮`) for pixel-level precision
+- Use zoom (`Ctrl+Scroll`) for pixel-level precision
+- Batch mode is great for images with watermarks in similar positions
+
+## Models
+
+| Model | Quality | Speed | Download Needed | Best For |
+|-------|---------|-------|-----------------|----------|
+| **LaMa AI** | ⭐⭐⭐ Best | 🐢 Slow | 88 MB | Complex watermarks, backgrounds |
+| **Telea** | ⭐⭐ Good | ⚡ Instant | No | Simple text watermarks |
+| **NS** | ⭐⭐ Good | ⚡ Instant | No | Smooth edge blending |
+
+## Batch Processing
+
+The batch dialog lets you:
+1. Add multiple images
+2. Choose output folder
+3. Select model (LaMa/Telea/NS)
+4. Process all with a single click
+5. Per-image progress log
+
+## Building .exe (Windows)
+
+```bash
+pip install pyinstaller
+python build.py
+```
+
+The standalone `.exe` will be in the `dist/` folder — no Python installation required on the target machine.
 
 ## How It Works
 
-The application uses ONNX Runtime to run the **LaMa (Large Mask Inpainting)** model, a state-of-the-art image inpainting model that can handle large missing regions with coherent, realistic content. The model runs entirely locally — no data is sent to any server.
+- **LaMa**: Uses ONNX Runtime to run the LaMa (Large Mask Inpainting) deep learning model. Trained by Samsung Research, it can fill large missing regions with coherent, realistic content.
+- **Telea / NS**: Traditional OpenCV inpainting algorithms — fast, lightweight, no model needed. Best for simple watermarks on uniform backgrounds.
+- All processing runs **100% locally** — no data is ever sent to any server.
 
-## Dependencies
+## Tech Stack
 
-- [ONNX Runtime](https://github.com/microsoft/onnxruntime) — Model inference engine
-- [LaMa](https://github.com/saic-mdal/lama) — Inpainting model by Samsung Research (via OpenCV model zoo)
-- OpenCV — Image processing
-- Pillow — Image I/O and format support
-- Tkinter — Desktop GUI
+- **Python** — Core language
+- **Tkinter** — Desktop GUI framework
+- **ONNX Runtime** — Deep learning inference engine
+- **OpenCV** — Image processing and traditional inpainting
+- **Pillow** — Image format support (PNG, JPEG, BMP, TIFF, WebP)
+- **NumPy** — Array operations
+- **LaMa** — State-of-the-art inpainting model (via OpenCV Model Zoo)
+- **Hugging Face Hub** — Model distribution
 
 ## License
 
