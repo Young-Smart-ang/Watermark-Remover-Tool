@@ -43,9 +43,9 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "undo": "↩ 撤销",
         "undo_n": "↩ 撤销 ({n})",
         "clear_mask": "🗑 清除选区",
-        "inpaint": "✨ 去水印!",
-        "toggle_result": "👁 查看结果",
-        "toggle_original": "👁 查看原图",
+        "inpaint": "去水印",
+        "toggle_result": "查看结果",
+        "toggle_original": "查看原图",
         "model_label": "模型:",
         "language": "🌐 EN",
         "status_ready": "✅ AI 模型就绪 — 打开图片开始去水印",
@@ -102,9 +102,9 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "undo": "↩ Undo",
         "undo_n": "↩ Undo ({n})",
         "clear_mask": "🗑 Clear Mask",
-        "inpaint": "✨ Remove!",
-        "toggle_result": "👁 Show Result",
-        "toggle_original": "👁 Show Original",
+        "inpaint": "Remove",
+        "toggle_result": "Show Result",
+        "toggle_original": "Show Original",
         "model_label": "Model:",
         "language": "🌐 中文",
         "status_ready": "✅ AI model ready — open an image to start",
@@ -281,18 +281,28 @@ def inpaint_ns(image_rgb: np.ndarray, mask: np.ndarray, radius: int = 3) -> np.n
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class UndoManager:
-    """Multi-step undo for mask states."""
+    """Multi-step undo for mask + result states."""
+
+    class Snapshot:
+        __slots__ = ("mask", "has_result", "result")
+
+        def __init__(self, mask: np.ndarray | None, has_result: bool,
+                     result: np.ndarray | None):
+            self.mask = mask.copy() if mask is not None else None
+            self.has_result = has_result
+            self.result = result.copy() if result is not None else None
 
     def __init__(self, max_steps: int = 50):
-        self._steps: list[np.ndarray] = []
+        self._steps: list[UndoManager.Snapshot] = []
         self._max = max_steps
 
-    def save(self, mask: np.ndarray):
-        self._steps.append(mask.copy())
+    def save(self, mask: np.ndarray | None, has_result: bool = False,
+             result: np.ndarray | None = None):
+        self._steps.append(UndoManager.Snapshot(mask, has_result, result))
         if len(self._steps) > self._max:
             self._steps.pop(0)
 
-    def undo(self) -> np.ndarray | None:
+    def undo(self) -> Snapshot | None:
         if not self._steps:
             return None
         return self._steps.pop()
@@ -896,7 +906,7 @@ class WatermarkRemover:
 
         # Save undo state before modification
         if self.mask is not None:
-            self.undo_mgr.save(self.mask)
+            self.undo_mgr.save(self.mask, self.result is not None, self.result)
 
         self._start_x = event.x
         self._start_y = event.y
@@ -992,14 +1002,23 @@ class WatermarkRemover:
     def undo(self):
         if self.original is None:
             return
-        # Try state-based undo first
-        prev = self.undo_mgr.undo()
-        if prev is not None:
-            self.mask = prev
+        snap = self.undo_mgr.undo()
+        if snap is not None:
+            if snap.mask is not None:
+                self.mask = snap.mask
+            # Restore result state
+            if snap.has_result and snap.result is not None:
+                self.result = snap.result
+                self._display_mode = MODE_RESULT
+                self.toggle_btn.config(state=tk.NORMAL, text=_("toggle_original"))
+            else:
+                self.result = None
+                self._display_mode = MODE_ORIGINAL
+                self.toggle_btn.config(state=tk.DISABLED, text=_("toggle_result"))
             self._render()
             self._update_undo_btn()
             return
-        # Fallback: stroke-based undo (compatibility)
+        # Fallback: stroke-based undo
         if not self._strokes:
             return
         self._strokes.pop()
@@ -1017,7 +1036,7 @@ class WatermarkRemover:
         if self.original is None:
             return
         if self.mask is not None:
-            self.undo_mgr.save(self.mask)
+            self.undo_mgr.save(self.mask, self.result is not None, self.result)
         self.mask.fill(0)
         self._strokes.clear()
         self._render()
@@ -1036,6 +1055,9 @@ class WatermarkRemover:
         if not self._model_ready:
             messagebox.showinfo("", _("model_busy"))
             return
+
+        # Save state before inpainting (for undo)
+        self.undo_mgr.save(self.mask, self.result is not None, self.result)
 
         self.status.config(text=_("status_processing", model=self._model_name))
         self.root.update()
